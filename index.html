@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VALKIN</title>
+    <link rel="icon" href="favicon2.png">
+    <style>
+        @font-face {
+            font-family: aquaBlue;
+            src: url(res/WC_AquaBlues_Bta.otf);
+        }
+
+        canvas {
+            display: block;
+            /* fix necessary to remove space at bottom of canvas */
+        }
+
+        body {
+            margin: 0;
+            height: 100vh;
+            background-color: black;
+            text-align: center;
+        }
+
+        #background {
+            position: absolute;
+            left: 0px;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+            -moz-user-select: none;
+            -webkit-user-drag: none;
+            -webkit-user-select: none;
+            -ms-user-select: none;
+        }
+
+        #valkin {
+            color: rgba(1, 1, 1, 0);
+            position: absolute;
+            text-align: center;
+            z-index: 1;
+            font-family: aquaBlue;
+            font-size: 170px;
+            letter-spacing: 30px;
+        }
+
+        .textReplacements {
+            font-size: large;
+            color: rgba(1, 1, 1, 0);
+            overflow: hidden;
+        }
+
+        .textReplacements::selection {
+            color: rgba(1, 1, 1, 0);
+            background: #000000;
+            /* WebKit/Blink Browsers */
+        }
+
+        .textReplacements::-moz-selection {
+            color: rgba(1, 1, 1, 0);
+            background: black;
+            /* Gecko Browsers */
+        }
+
+        #control {
+            position: absolute;
+            overflow: hidden;
+            left: 0px;
+            top: 0px;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        button {
+            background-color: Transparent;
+            background-repeat: no-repeat;
+            border: none;
+            cursor: pointer;
+            overflow: hidden;
+            outline: none;
+        }
+    </style>
+</head>
+
+<body>
+
+
+    <a id="instagram" class="textReplacements" style="position: absolute; z-index: 10;"
+        target="_blank" href="https://www.instagram.com/valkinmusic/">INSTAGRAM</a>
+    <a id="email" class="textReplacements" style="position: absolute; z-index: 10;"
+        target="_blank" href="mailto:officialvalkin@gmail.com">EMAIL</a>
+    <a id="twitter" class="textReplacements" style="position: absolute; z-index: 10;"
+        target="_blank" href="https://twitter.com/ValkinMusic">TWITTER</a>
+    <a id="spotify" class="textReplacements" style="position: absolute; z-index: 10;"
+        target="_blank" href="https://open.spotify.com/artist/1tYGtEpIUbslSQLxBtpIUd">SPOTIFY</a>
+    <a id="soundcloud" class="textReplacements" style="position: absolute; z-index: 10;"
+        target="_blank" href="https://soundcloud.com/valkinofficial">SOUNDCLOUD</a>
+    <a id="youtube" class="textReplacements" style="position: absolute; z-index: 10;"
+        target="_blank" href="https://www.youtube.com/channel/UCrlD3kzfVgbgGiZaa_XqkhQ/">YOUTUBE</a>
+
+    <img id='background'
+        src="https://media.discordapp.net/attachments/382665164773654529/693555470815985665/vignette-fadenicehd-640w.png"
+        alt="">
+    <script type="module">
+        import * as THREE from 'https://threejsfundamentals.org/threejs/resources/threejs/r114/build/three.module.js';
+        import { GLTFLoader } from 'https://threejsfundamentals.org/threejs/resources/threejs/r114/examples/jsm/loaders/GLTFLoader.js';
+        import { EffectComposer } from 'https://threejsfundamentals.org/threejs/resources/threejs/r114/examples/jsm/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'https://threejsfundamentals.org/threejs/resources/threejs/r114/examples/jsm/postprocessing/RenderPass.js';
+        import { BokehPass } from 'https://threejsfundamentals.org/threejs/resources/threejs/r114/examples/jsm/postprocessing/BokehPass.js';
+        import { FilmPass } from 'https://threejsfundamentals.org/threejs/resources/threejs/r114/examples/jsm/postprocessing/FilmPass.js';
+        import { ShaderPass } from 'https://threejsfundamentals.org/threejs/resources/threejs/r114/examples/jsm/postprocessing/ShaderPass.js';
+        import { BadTVShader } from './js/BadTVShader.js'
+        import { RGBShiftShader } from './js/RGBShiftShader.js'
+        import { StaticShader } from './js/StaticShader.js'
+        var scene = new THREE.Scene();
+        var camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.001, 1000); //80 for mobile devices
+        var renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, preserveDrawingBuffer: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio / 2);//3 or 4 for some mobile devices
+        document.body.appendChild(renderer.domElement);
+
+        var model;
+        var mixer;
+        var light;
+        var lightbulb;
+        var hole;
+        var wall;
+
+        var loader = new GLTFLoader();
+        var clock = new THREE.Clock();
+
+        var instagram = document.getElementById('instagram');
+        var twitter = document.getElementById('twitter');
+        var spotify = document.getElementById('spotify');
+        setTimeout(() => { resizeElements(instagramMesh, instagram); resizeElements(twitterMesh, twitter); resizeElements(spotifyMesh, spotify); resizeElements(soundcloudMesh, soundcloud); resizeElements(youtubeMesh, youtube); }, 10);
+
+        var fontLoader = new THREE.FontLoader();
+
+        var initialResize = false
+
+
+
+
+        var portrait = false;
+        console.log(window.innerWidth < window.innerHeight)
+
+
+        window.addEventListener('resize', () => {
+            resize();
+        })
+
+        function resize() {
+            if (window.innerWidth < window.innerHeight)
+                phoneMode();
+            else if (window.innerWidth > window.innerHeight)
+                desktopMode();
+
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio / 2);
+            composer.setSize(window.innerWidth, window.innerHeight);
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            //resizeTitle();
+            setTimeout(() => { resizeElements(instagramMesh, instagram); resizeElements(twitterMesh, twitter); resizeElements(spotifyMesh, spotify); resizeElements(soundcloudMesh, soundcloud); resizeElements(youtubeMesh, youtube); resizeElements(emailMesh, email); }, 10);
+        }
+
+        
+
+        var rotX = 0;
+        var rotY = 0;
+
+        function phoneMode() {
+            portrait = true;
+            camera.fov = 80;
+
+        }
+        function desktopMode() {
+            portrait = false;
+            camera.fov = 40;
+
+        }
+
+        document.addEventListener('mousemove', (e) => {
+            rotX = -(e.clientX - window.innerWidth / 2) / (window.innerWidth * 2);
+            rotY = -(e.clientY - window.innerHeight / 2) / (window.innerHeight * 2);
+        });
+
+
+    // feature detect
+    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+      DeviceOrientationEvent.requestPermission()
+        .then(permissionState => {
+          if (permissionState === 'granted') {
+            window.addEventListener('deviceorientation', () => {});
+          }
+        })
+        .catch(console.error);
+    } else {
+      // handle regular non iOS 13+ devices
+    }
+  
+        
+
+        function deviceOrientationListener(e) {
+            var g = Math.abs(e.gamma) * -1;
+            var b = e.beta;
+            if (portrait) {
+                if (e.gamma > 0)
+                    rotX = -(g / 90 + 5) / Math.pow((g / 90 - 2), 2) + 1.25;
+                else
+                    rotX = (-(g / 90 + 5) / Math.pow((g / 90 - 2), 2) + 1.25) * -1;
+                rotY = (e.beta / 180) / 2 - 0.3;
+            }
+            else {
+                rotX = e.beta / 90;
+                rotY = e.gamma / 90;
+            }
+        }
+        window.addEventListener("deviceorientation", deviceOrientationListener,true);
+
+
+
+        var texLoader = new THREE.TextureLoader();
+
+        var cameraEmpty = new THREE.Mesh();
+
+
+        function imageLoader(img, a, x, y) {
+            var material = new THREE.MeshBasicMaterial({ map: texLoader.load(img), opacity: a, transparent: true, color: 0xffffff });
+            var geometry = new THREE.PlaneGeometry(x, y);
+            
+            return new THREE.Mesh(geometry, material);
+        }
+
+        var imgMesh = imageLoader('https://media.discordapp.net/attachments/382665164773654529/693579373814611978/wc-aquablues-bta.png', 0.8, 0.05, 0.0075)
+
+        var spotifyMesh = imageLoader('./images/spotify.png', 0.2, 0.01, 0.01)
+        var instagramMesh = imageLoader('./images/instagram.png', 0.2, 0.01, 0.01)
+        var twitterMesh = imageLoader('./images/twitter.png', 0.2, 0.012, 0.01)
+        var soundcloudMesh = imageLoader('https://media.discordapp.net/attachments/382665164773654529/696143222275047445/poopcloud.png?width=677&height=677', 0.2, 0.01, 0.01)
+        var youtubeMesh = imageLoader('https://media.discordapp.net/attachments/382665164773654529/696150684579528714/4_T0E89WmJWVJ_CvjUOG3y4MFmwiM6oek3NVtiHAV1SY0Q4PXJ8U8SciF5QDVpaI86T6bkI0VCqjTp3RfUoYOBSQ3MKZ910wav4a.png', 0.2, 0.01, 0.012)
+        var emailMesh = imageLoader('./images/mail.png', 0.2, 0.01, 0.01)
+
+        
+        scene.add(cameraEmpty)
+        cameraEmpty.add(imgMesh)
+        cameraEmpty.add(spotifyMesh)
+        cameraEmpty.add(twitterMesh)
+        cameraEmpty.add(instagramMesh)
+        cameraEmpty.add(soundcloudMesh)
+        cameraEmpty.add(youtubeMesh)
+        cameraEmpty.add(emailMesh)
+
+        console.log(cameraEmpty)
+
+        // fontLoader.load('./res/aquablues.json', function (font) {
+
+        //     var textMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+
+        //     var about = `
+        //     VALKIN is an electronic music producer and DJ based in Denver, CO. 
+        //     with styles focused on industrial baselines
+        //     and funny monkey noises, you're sure to 
+        //     have a goofy time listening to his music!!!!! :)`
+
+        //     var aboutText = new THREE.TextGeometry(about, {
+        //         font: font,
+        //         size: 0.0025,
+        //         height: 0.0001,
+        //         curveSegments: 1,
+        //         bevelEnabled: false
+        //     });
+        //     var aboutMesh = new THREE.Mesh(aboutText, textMaterial)
+        //     cameraEmpty.add(aboutMesh)
+        //     aboutMesh.position.z = -0.1
+        //     aboutMesh.position.x = -0.09
+        //     aboutMesh.position.y = 0.01
+        //     aboutMesh.visible = true
+
+        // });
+
+        imgMesh.position.z = -0.08
+        spotifyMesh.position.z = -0.2
+        twitterMesh.position.z = -0.2
+        instagramMesh.position.z = -0.2
+        soundcloudMesh.position.z = -0.2
+        youtubeMesh.position.z = -0.2
+        emailMesh.position.z = -0.2
+
+        instagramMesh.position.y = -0.06
+        spotifyMesh.position.y = -0.06
+        twitterMesh.position.y = -0.06
+        soundcloudMesh.position.y = -0.06
+        emailMesh.position.y = -0.06
+        youtubeMesh.position.y = -0.0602
+
+        // instagramMesh.position.x = 0.02
+        // twitterMesh.position.x = 0.04
+        // spotifyMesh.position.x = -0.0
+        // soundcloudMesh.position.x = -0.02
+        // youtubeMesh.position.x = -0.04
+        // youtubeMesh.position.x = -0.04
+
+        spotifyMesh.position.x = 0.008
+        emailMesh.position.x = 0.024
+        twitterMesh.position.x = 0.04
+        soundcloudMesh.position.x = -0.008
+        youtubeMesh.position.x = -0.024
+        instagramMesh.position.x = -0.04
+
+        camera.position.z = 1.64;
+        camera.position.x = 1.45;
+        camera.position.y = 0.3;
+
+        cameraEmpty.position.z = 1.64;
+        cameraEmpty.position.x = 1.45;
+        cameraEmpty.position.y = 0.3;
+
+        // youtube.addEventListener("mouseenter", function( event ) {   youtubeMesh.material.opacity = 0.8;  });
+        // soundcloud.addEventListener("mouseenter", function( event ) {   soundcloudMesh.material.opacity = 0.8;  });
+        // spotify.addEventListener("mouseenter", function( event ) {   spotifyMesh.material.opacity = 0.8;  });
+        // instagram.addEventListener("mouseenter", function( event ) {   instagramMesh.material.opacity = 0.8;  });
+        // twitter.addEventListener("mouseenter", function( event ) {   twitterMesh.material.opacity = 0.8;  });
+
+        // youtube.addEventListener("mouseleave", function( event ) {   youtubeMesh.material.opacity = 0.2;  });
+        // soundcloud.addEventListener("mouseleave", function( event ) {   soundcloudMesh.material.opacity = 0.2;  });
+        // spotify.addEventListener("mouseleave", function( event ) {   spotifyMesh.material.opacity = 0.2;  });
+        // instagram.addEventListener("mouseleave", function( event ) {   instagramMesh.material.opacity = 0.2;  });
+        // twitter.addEventListener("mouseleave", function( event ) {   twitterMesh.material.opacity = 0.2;  });
+
+        function resizeTitle() {
+            var factor = window.innerHeight / 1041
+            var valkinText = document.getElementById('valkin')
+            valkinText.style.top = `${window.innerHeight / 2 - (70 * factor)}px`
+            valkinText.style.left = `${window.innerWidth / 2 - (370 * factor)}px`
+            valkinText.style.height = `${107 * factor}px`
+            valkinText.style.width = `${715 * factor}px`
+            valkin.style.fontSize = `${171 * factor}px`
+            valkin.style.letterSpacing = `${32 * factor}px`
+        }
+
+        function resizeElements(targetMesh, targetElement) {
+            targetMesh.renderOrder = 9999;
+            targetMesh.onBeforeRender = function( renderer ) { renderer.clearDepth(); };
+            if (!targetMesh)
+                return;
+            if (portrait){
+                targetMesh.position.z = -0.12;
+                targetMesh.position.y = -0.08;
+            }
+            else{
+                targetMesh.position.z = -0.2;
+                targetMesh.position.y = -0.06;
+                
+            }
+            var pos = new THREE.Vector3();
+            var pos2 = new THREE.Vector3();
+            targetMesh.geometry.computeBoundingBox();
+            var halfH = Math.abs(targetMesh.geometry.boundingBox.max.y);
+            var halfW = Math.abs(targetMesh.geometry.boundingBox.max.x);
+            targetMesh.position.x -= halfW
+            targetMesh.position.y += halfH
+            targetMesh.updateWorldMatrix(true, false)
+            targetMesh.getWorldPosition(pos)
+            targetMesh.position.x += halfW * 2
+            targetMesh.position.y -= halfH * 2
+            targetMesh.updateWorldMatrix(true, false)
+            targetMesh.getWorldPosition(pos2)
+            targetMesh.position.x -= halfW
+            targetMesh.position.y += halfH
+            pos.project(camera);
+            pos2.project(camera);
+
+            var x = Math.floor((pos.x * .5 + .5) * window.innerWidth)
+            var y = Math.floor((-pos.y * .5 + .5) * window.innerHeight)
+            var x2 = Math.floor((pos2.x * .5 + .5) * window.innerWidth)
+            var y2 = Math.floor((-pos2.y * .5 + .5) * window.innerHeight)
+
+            targetElement.style.left = x + 'px'
+            targetElement.style.top = y + 'px'
+            targetElement.style.width = (x2 - x) + 'px'
+            targetElement.style.height = (y2 - y) + 'px'
+
+            targetElement.addEventListener("mouseenter", function (event) { targetMesh.material.opacity = 0.8; });
+            targetElement.addEventListener("mouseleave", function (event) { targetMesh.material.opacity = 0.2; });
+        }
+
+        // valkinText.style.top=`${textLoc.y*0.95}px`
+        //     valkinText.style.left=`${textLoc.x*0.98}px`
+        //     valkinText.style.height=`${textLoc.y2-textLoc.y}px`
+        //     valkinText.style.width=`${textLoc.x2-textLoc.x}px`
+        //     valkin.style.fontSize = `${(textLoc.y2-textLoc.y)*1.6}px`
+        //     valkin.style.letterSpacing = `${(textLoc.y2-textLoc.y)*0.3}px`
+        var valkinText = document.getElementById('valkin')
+
+        //resizeTitle();
+
+        loader.load('./res/bruhroom8.glb', function (gltf) {
+            model = gltf.scene;
+            console.log(model)
+            console.log(model.children[1])
+
+            //model.children[1].children[1].frustumCulled = false; //fixes a weird culling issue with the skinned mesh
+            model.children[0].children[1].frustumCulled = false; //fixes a weird culling issue with the skinned mesh
+
+            mixer = new THREE.AnimationMixer(model)
+            gltf.animations.forEach((clip) => { setTimeout(() => { mixer.clipAction(clip).play(); }, Math.random() * 3000) });
+
+            // light = model.children[2].children[0].children[0].children[0].children[0];
+            // lightbulb = model.children[2].children[0].children[0];
+            light = model.children[1].children[0].children[0].children[0].children[0];
+            lightbulb = model.children[1].children[0].children[0];
+            hole = model.children[13];
+            //wall = model.children[15];
+            var wall = model.children[17]
+            // wall.material.emissiveIntensity = 0.1;
+            // wall.material.emissive = new THREE.Color(0.1,0.1,0.1)
+            light.intensity = 0;
+            hole.material = new THREE.MeshBasicMaterial({ map: texLoader.load('./images/darkwall.jpg'), opacity: 1, transparent: true, color: 0x968f54 });
+            //wall.material = new THREE.MeshBasicMaterial({ map: texLoader.load('./images/darkwall.jpg'), opacity: 1, transparent: true, color: 0xffffff });
+            hole.material.side = THREE.DoubleSide;
+            //wall.material.side = THREE.DoubleSide;
+            hole.material.lightMapIntensity = 0;
+            //hole.material.emissiveIntensity = 1;
+            //hole.material.emissive = new THREE.Color(0.1,0.1,0.1)
+            lightbulb.material = new THREE.MeshBasicMaterial({ color: 0x726946 });
+            lightbulb.emissive = new THREE.Color(255, 0, 0)
+            console.log(lightbulb)
+            lightbulb.visible = false;
+            hole.visible = false;
+            //light.distance = 10
+
+            scene.add(model);
+            flicker();
+            resize();
+        });
+
+        var flickerTime = 50;
+
+        function flicker() {//flickers lightbulb to hide model load
+            setTimeout(() => {
+                light.intensity = 0.03;
+                lightbulb.visible = true
+                hole.visible = true;
+                setTimeout(() => {
+                    //lightbulb.visible = false
+                    light.intensity = 0;
+                    setTimeout(() => {
+                        //lightbulb.visible = true
+                        light.intensity = 0.03;
+                        setTimeout(() => {
+                            //lightbulb.visible = false
+                            light.intensity = 0;
+                            setTimeout(() => {
+                                //lightbulb.visible = true
+                                light.intensity = 0.03;
+                                setTimeout(() => {
+                                    //lightbulb.visible = false
+                                    light.intensity = 0;
+                                    setTimeout(() => {
+                                        //lightbulb.visible = true
+                                        light.intensity = 0.03;
+                                    }, flickerTime)
+                                }, flickerTime)
+                            }, flickerTime)
+                        }, flickerTime)
+                    }, flickerTime)
+                }, flickerTime)
+            }, 1000)
+        }
+
+        var composer = new EffectComposer(renderer);
+
+        var renderPass = new RenderPass(scene, camera);
+        composer.addPass(renderPass);
+
+        const filmPass = new FilmPass(
+            10,   // noise intensity
+            0.15,  // scanline intensity
+            300,    // scanline count
+            false,  // grayscale
+        );
+        const badTVPass = new ShaderPass(BadTVShader);
+        const RGBShiftPass = new ShaderPass(RGBShiftShader);
+        const StaticPass = new ShaderPass(StaticShader);
+        composer.addPass(StaticPass);
+        composer.addPass(RGBShiftPass);
+        composer.addPass(badTVPass);
+
+        filmPass.renderToScreen = true;
+        composer.addPass(filmPass);
+
+
+        /*
+        //set shader uniforms
+        filmPass.uniforms.grayscale.value = 0;
+
+        //Init DAT GUI control panel
+        badTVParams = {
+            mute: true,
+            show: true,
+            distortion: 3.0,
+            distortion2: 1.0,
+            speed: 0.3,
+            rollSpeed: 0.1
+        };
+
+        staticParams = {
+            show: true,
+            amount: 0.5,
+            size: 4.0
+        };
+
+        rgbParams = {
+            show: true,
+            amount: 0.005,
+            angle: 0.0,
+        };
+
+        filmParams = {
+            show: true,
+            count: 800,
+            sIntensity: 0.9,
+            nIntensity: 0.4
+        };
+        */
+        var shaderTime = 0;
+        function animate() {
+
+            if (!initialResize && spotifyMesh.material != null) {
+                resize();
+                initialResize = true;
+            }
+            //resizeElements(spotifyMesh,ja);
+
+            //imgMesh.position.z -= 0.001;
+            shaderTime += 0.1;
+            badTVPass.uniforms['time'].value = shaderTime;
+            StaticPass.uniforms['time'].value = shaderTime / 100;
+            var delta = clock.getDelta();
+            if (model) {
+
+                mixer.update(delta)
+                //update camera view based on mouse coordinates
+                camera.rotation.y = rotX;
+                camera.rotation.x = rotY * 1.3
+                camera.position.x = rotX / 7 + 0.45
+                camera.position.y = -rotY / 7 + 0.3
+                camera.rotation.z = rotX / 5
+
+                cameraEmpty.rotation.y = rotX;
+                cameraEmpty.rotation.x = rotY * 1.3
+                cameraEmpty.position.x = rotX / 7 + 0.45
+                cameraEmpty.position.y = -rotY / 7 + 0.3
+                cameraEmpty.rotation.z = rotX / 5
+
+                //ease light intensity if lightbulb is on
+                if (light.intensity > 0 && light.intensity < 0.2)
+                    light.intensity += 0.01
+            }
+
+
+            //renderer.render(scene, camera); //no post processing
+            composer.render(delta);
+            requestAnimationFrame(animate);
+            //setTimeout(()=>animate(),1000/30) //for 30 ps
+        }
+        animate();
+    </script>
+</body>
+
+</html>
